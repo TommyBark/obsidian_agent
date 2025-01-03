@@ -1,0 +1,11 @@
+{
+    "dockerfile_lines": [],
+    "graphs": {
+      "obsidian_assistant": "./graph.py:graph"
+    },
+    "env": "./.env",
+    "python_version": "3.11",
+    "dependencies": [
+      "."
+    ]
+  }
