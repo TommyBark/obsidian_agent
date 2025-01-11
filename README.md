@@ -6,7 +6,7 @@ Talk with your Obsidian Vault.
 
 - [x] PoC - retrieval and creating simple notes from vault
 - [ ] Talk with your vault (with automatic retrieval of relevant information)
-    - [ ] Simple (Gradio?) interface
+    - [x] Simple (Gradio?) interface
     - [ ] Advanced RAG techniques
 - [ ] Quickly create new relevant short notes from URLs   
 
