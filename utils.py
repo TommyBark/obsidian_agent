@@ -69,7 +69,7 @@ class ObsidianLibrary:
         path = f"{self.path}/{note_title}.md"
         if os.path.exists(path):
             raise FileExistsError(f"Note '{note_title}' already exists")
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(content)
 
 
