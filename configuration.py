@@ -10,7 +10,11 @@ class Configuration:
     """The configurable fields for the chatbot."""
 
     user_id: str = "default-user"
-    assistant_role: str = "You are an helpful assistant."
+    assistant_role: str = """
+    You are a helpful chatbot. 
+
+    You are designed to be a companion to a user, helping them by answering their messages utilizing their personal note library.
+    """
 
     @classmethod
     def from_runnable_config(

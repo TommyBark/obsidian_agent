@@ -41,7 +41,7 @@ class ReadNote(TypedDict):
     """Decision on reading a note and recursively also its linked notes with specified depth"""
 
     note_name: str
-    depth: Annotated[int, ValueRange(0, 3)]
+    depth: Annotated[int, ValueRange(0, 2)]
 
 
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
@@ -79,6 +79,11 @@ profile_extractor = create_extractor(
 # Chatbot instruction for choosing what to update and what tools to call
 MODEL_SYSTEM_MESSAGE = """{assistant_role}
 
+Your main task is to retrieve and create new Obsidian notes from user.
+
+Obsidian notes follow Markdown syntax but introduce a few additional features. Each note can be linked to other notes, forming a network of knowledge. 
+Links are created by wrapping the note's name in double brackets, like this: [[note name]].
+
 You have a long term memory which keeps track of three things:
 1. The user's profile (general information about them) 
 2. The user's personal note library
@@ -103,7 +108,7 @@ Here are your instructions for reasoning about the user's messages:
 - If personal information was provided about the user, update the user's profile by calling UpdateMemory tool with type `user`
 - If user asks you to create new note, create it by using UpdateMemory tool with type `new_note`
 - If the user has specified preferences for how to create new notes, update the instructions by calling UpdateMemory tool with type `instructions`
-- If the user asks you to read a note, read it by calling ReadNote tool with the note name (from the user) and the depth of how many linked notes to read (usually from 0-3)
+- If the user asks you to read a note, read it by calling ReadNote tool with the note name (from the user) and the depth of how many linked notes to read (usually from 0-3, default 0)
 - You currently do not have ability to update existing notes. If user asks for it inform him that you are not able to do it.
 
 3. Tell the user that you have updated your memory, if appropriate:
@@ -298,12 +303,13 @@ def read_notes(
     # Get the tool call parameters
     tool_call = state["messages"][-1].tool_calls[0]
     note_name = tool_call["args"]["note_name"]
+    depth = tool_call["args"]["depth"]
     print(tool_call["args"])
     # depth = tool_call["args"]["depth"]
 
     # Use the library's existing function
     try:
-        content = LIBRARY.get_note_content(note_name)
+        content = LIBRARY.get_note_with_context(note_name, depth)
     except (ValueError, FileNotFoundError) as e:
         content = e
 
@@ -379,17 +385,6 @@ def route_message(
         else:
             raise ValueError
 
-
-# Initialize the Obsidian library and Config
-
-config = configuration.Configuration(
-    user_id="user123",
-    assistant_role="""
-    You are a helpful chatbot. 
-
-    You are designed to be a companion to a user, helping them by answering their messages utilizing their personal note library.
-    """,
-)
 
 # Create the graph + all nodes
 builder = StateGraph(MessagesState, config_schema=configuration.Configuration)

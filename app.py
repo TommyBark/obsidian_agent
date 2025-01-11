@@ -51,7 +51,7 @@ async def get_response(message, history):
 # Create the UI In Gradio
 demo = gr.ChatInterface(
     fn=get_response,
-    title="Q&A over Speckle's developer docs",
+    title="Obsidian Assistant",
     examples=[
         ["What is my name?"],
         ["Read a note called Buddhism for me."],
