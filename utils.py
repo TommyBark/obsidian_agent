@@ -6,21 +6,70 @@ class ObsidianLibrary:
     def __init__(self, path: str):
         self.path = path
 
-    def get_note_content(self, note: str, section: Optional[str] = None) -> str:
+    def get_note_content(self, note_name: str, link_exists: bool = False) -> str:
 
-        if os.path.exists(f"{self.path}/{note}.md") is False:
-            raise FileNotFoundError(f"Note '{note}' not found")
-        with open(f"{self.path}/{note}.md", "r", encoding="utf-8") as f:
+        section_name = None
+        if "#" in note_name:
+            section_name = note_name.split("#")[1]
+            note_name = note_name.split("#")[0]
+        if "|" in note_name:
+            note_name = note_name.split("|")[0]
+
+        note_path = f"{self.path}/{note_name}.md".strip().replace("\xa0", " ")
+        if (link_exists is False) and (os.path.exists(note_path) is False):
+            raise FileNotFoundError(f"Note '{note_name}' not found")
+        elif (link_exists is True) and (os.path.exists(note_path) is False):
+            return f"Note '{note_name}' is empty."
+
+        with open(note_path, "r", encoding="utf-8") as f:
             text = f.read()
+            text = "\nNOTE NAME: " + note_name + "\n\n" + text
 
-        if section is not None:
-            text = find_and_extract_section(text, section)
-            if text is None:
-                raise ValueError(f"Section '{section}' not found in note '{note}'")
+        if section_name is not None:
+            section_text = find_and_extract_section(text, section_name)
+            if section_text is None:
+                print(
+                    f"Section '{section_name}' not found in note '{note_name}', giving full note."
+                )
+                # raise ValueError(f"Section '{section}' not found in note '{note_name}'")
+            else:
+                text = (
+                    "\nNOTE NAME: "
+                    + note_name
+                    + " SECTION:"
+                    + section_name
+                    + "\n\n"
+                    + section_text
+                )
         return text
 
-    def get_note_with_context(self, note: str, depth: int = 2) -> str:
-        pass
+    def get_note_with_context(self, note_name: str, depth: int = 2) -> str:
+
+        text = self.get_note_content(note_name, link_exists=False)
+        if depth == 0:
+            return text
+
+        links = self.get_note_links(text)
+
+        if depth > 3:
+            raise ValueError(
+                "Depth cannot be greater than 3, use get_all_note_links instead"
+            )
+
+        for _ in range(depth):
+            all_links = links.copy()
+            for link in links:
+                all_links.extend(
+                    self.get_note_links(self.get_note_content(link, link_exists=True))
+                )
+            links = all_links.copy()
+
+        all_links = list(set(all_links))
+        print(all_links)
+        for link in all_links:
+            note_content = self.get_note_content(link, link_exists=True)
+            text = text + f"\n\n{note_content}"
+        return text
 
     def get_note_links(self, note: str) -> List[str]:
         results = []
@@ -57,7 +106,7 @@ class ObsidianLibrary:
                 continue
             else:
                 visited_links.add(link)
-                note = self.get_note_content(link)
+                note = self.get_note_content(link, link_exists=True)
                 sub_links = self.get_all_note_links(
                     self.get_note_links(note), visited_links
                 )
@@ -179,3 +228,10 @@ def extract_tool_info(tool_calls, schema_name="Memory"):
             )
 
     return "\n\n".join(result_parts)
+
+
+if __name__ == "__main__":
+    OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
+    obsidian = ObsidianLibrary(OBSIDIAN_VAULT_PATH)
+    print(obsidian.get_note_links("Motivation"))
+    print(obsidian.get_note_with_context("Motivation", depth=1))
