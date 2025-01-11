@@ -19,7 +19,7 @@ from utils import ObsidianLibrary, Spy, extract_tool_info
 OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
 
 if OBSIDIAN_VAULT_PATH is None:
-    print("Please set the OBSIDIAN_VAULT_PATH environment variable.")
+    raise ValueError("Please set the OBSIDIAN_VAULT_PATH environment variable.")
 
 LIBRARY = ObsidianLibrary(path=OBSIDIAN_VAULT_PATH)
 
@@ -238,7 +238,7 @@ def create_note(
     config: RunnableConfig,
     store: BaseStore,
 ):
-    """Reflect on the chat history and update the memory collection."""
+    """Reflect on the chat history and create a new note in the user's library according to user's instructions."""
 
     # Merge the chat history and the instruction
     TRUSTCALL_INSTRUCTION_FORMATTED = TRUSTCALL_INSTRUCTION.format(
