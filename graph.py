@@ -13,8 +13,9 @@ from pydantic import BaseModel, Field
 from trustcall import create_extractor
 
 import configuration
+from obsidian_utils import ObsidianLibrary
 from store import checkpoint_factory, store_factory
-from utils import ObsidianLibrary, Spy, extract_tool_info
+from utils import Spy, extract_tool_info
 
 OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
 
