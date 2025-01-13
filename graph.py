@@ -2,10 +2,8 @@ import os
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Annotated, List, Literal, Optional, TypedDict
+from typing import Annotated, Literal, Optional, TypedDict
 
-from langchain_community.vectorstores import FAISS, VectorStore
-from langchain_core.documents import Document
 from langchain_core.messages import (
     AnyMessage,
     HumanMessage,
@@ -13,7 +11,7 @@ from langchain_core.messages import (
     merge_message_runs,
 )
 from langchain_core.runnables import RunnableConfig
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph, add_messages
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
@@ -32,7 +30,7 @@ if OBSIDIAN_VAULT_PATH is None:
 if VECTOR_STORE_PATH is None:
     raise ValueError("Please set the VECTOR_STORE_PATH environment variable.")
 
-LIBRARY = ObsidianLibrary(path=OBSIDIAN_VAULT_PATH)
+LIBRARY = ObsidianLibrary(path=OBSIDIAN_VAULT_PATH, vector_store_path=VECTOR_STORE_PATH)
 
 
 class GraphState(TypedDict):
@@ -67,11 +65,6 @@ class SemanticSearch(TypedDict):
 
 
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-
-embedding_model = OpenAIEmbeddings()
-vector_store = FAISS.load_local(
-    VECTOR_STORE_PATH, embeddings=embedding_model, allow_dangerous_deserialization=True
-)
 
 
 # User profile schema
@@ -271,20 +264,13 @@ def update_profile_node(state: GraphState, config: RunnableConfig, store: BaseSt
     }
 
 
-def search_notes(
-    keywords: str, vector_store: VectorStore, k: int = 5
-) -> List[Document]:
-    """Search notes in the vector store based on keywords"""
-    return vector_store.similarity_search(keywords, k)
-
-
 def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStore):
 
     tool_call = state["messages"][-1].tool_calls[0]
     keywords = tool_call["args"]["keywords"]
     k = tool_call["args"]["k"]
 
-    results = search_notes(keywords, vector_store, k)
+    results = LIBRARY.search_notes(keywords, k)
     print("Searching for: ", keywords, k)
     content = [
         Note(name=doc.metadata["path"].name, text=doc.page_content) for doc in results

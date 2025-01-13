@@ -2,14 +2,26 @@ import os
 import pathlib
 from typing import List, Optional
 
+from langchain_community.vectorstores import FAISS, VectorStore
+from langchain_core.documents import Document
+from langchain_openai import OpenAIEmbeddings
+
 
 class ObsidianLibrary:
-    def __init__(self, path: str):
+    def __init__(self, path: str, vector_store_path: str):
         self.path = path
 
         file_paths = [*pathlib.Path(path).rglob("*.md")]
         self.file_paths = [str(path) for path in file_paths]
         self.file_names = [path.name for path in file_paths]
+
+        embedding_model = OpenAIEmbeddings()
+
+        self.vector_store = FAISS.load_local(
+            vector_store_path,
+            embeddings=embedding_model,
+            allow_dangerous_deserialization=True,
+        )
 
     def get_note_content(self, note_name: str, link_exists: bool = False) -> str:
 
@@ -132,6 +144,12 @@ class ObsidianLibrary:
             f.write(content)
             self.file_paths.append(path)
             self.file_names.append(f"{note_title}.md")
+
+    def search_notes(
+        self, keywords: str, vector_store: VectorStore, k: int = 5
+    ) -> List[Document]:
+        """Search notes in the vector store based on keywords"""
+        return vector_store.similarity_search(keywords, k)
 
 
 def find_and_extract_section(text: str, search_string: str) -> Optional[str]:
