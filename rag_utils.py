@@ -32,7 +32,7 @@ def create_vector_store(obsidian_path: str, store_path: Optional[str] = None) ->
     docs = []
     for path in file_paths:
         with open(path, "r", encoding="utf-8") as f:
-            text = f"NOTENAME: {path.name} \n\n" + f.read()
+            text = f.read()
             docs.append(Document(page_content=text, metadata={"path": path}))
 
     # Creating text splitter
@@ -42,8 +42,6 @@ def create_vector_store(obsidian_path: str, store_path: Optional[str] = None) ->
     )
 
     texts = text_splitter.split_documents(docs)
-    # Embedding object
-    
 
     # Create the FAISS vector store
     store = FAISS.from_documents(texts, embedding_model)
@@ -51,12 +49,14 @@ def create_vector_store(obsidian_path: str, store_path: Optional[str] = None) ->
     # Save the vector store locally if a path is provided
     if store_path:
         store.save_local(store_path)
-
+        print(f"Store saved to {store_path}")
     return store
 
 
 if __name__ == "__main__":
     OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
+    if not OBSIDIAN_VAULT_PATH:
+        raise ValueError("OBSIDIAN_VAULT_PATH environment variable not set.")
     obsidian = ObsidianLibrary(OBSIDIAN_VAULT_PATH)
 
     t = create_vector_store(OBSIDIAN_VAULT_PATH, store_path="./test_store")

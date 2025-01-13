@@ -2,8 +2,10 @@ import os
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Annotated, Literal, Optional, TypedDict
+from typing import Annotated, List, Literal, Optional, TypedDict
 
+from langchain_community.vectorstores import FAISS, VectorStore
+from langchain_core.documents import Document
 from langchain_core.messages import (
     AnyMessage,
     HumanMessage,
@@ -11,7 +13,7 @@ from langchain_core.messages import (
     merge_message_runs,
 )
 from langchain_core.runnables import RunnableConfig
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langgraph.graph import END, START, StateGraph, add_messages
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
@@ -23,9 +25,12 @@ from store import checkpoint_factory, store_factory
 from utils import Spy, extract_tool_info
 
 OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
+VECTOR_STORE_PATH = os.getenv("VECTOR_STORE_PATH")
 
 if OBSIDIAN_VAULT_PATH is None:
     raise ValueError("Please set the OBSIDIAN_VAULT_PATH environment variable.")
+if VECTOR_STORE_PATH is None:
+    raise ValueError("Please set the VECTOR_STORE_PATH environment variable.")
 
 LIBRARY = ObsidianLibrary(path=OBSIDIAN_VAULT_PATH)
 
@@ -54,7 +59,19 @@ class ReadNote(TypedDict):
     depth: Annotated[int, ValueRange(0, 2)]
 
 
+class SemanticSearch(TypedDict):
+    """Decision on searching notes based on keywords"""
+
+    keywords: str
+    k: int
+
+
 model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+embedding_model = OpenAIEmbeddings()
+vector_store = FAISS.load_local(
+    VECTOR_STORE_PATH, embeddings=embedding_model, allow_dangerous_deserialization=True
+)
 
 
 # User profile schema
@@ -76,7 +93,6 @@ class Profile(BaseModel):
 # ToDo schema
 class Note(BaseModel):
     name: str = Field(description="The task to be completed.")
-    path: str = Field(description="The path to the note.")
     text: str = Field(description="Estimated time to complete the task (minutes).")
 
 
@@ -115,11 +131,15 @@ Here are your instructions for reasoning about the user's messages:
 
 1. Reason carefully about the user's messages as presented below. 
 
-2. Decide whether any of the your long-term memory should be updated or a note should be read:
+2. Available tools:
+2a. Decide whether any of the your long-term memory should be updated:
 - If personal information was provided about the user, update the user's profile by calling UpdateMemory tool with type `user`
+2b. Decide if the new note should be created as demanded by the user
 - If user asks you to create new note, create it by using UpdateMemory tool with type `new_note`
 - If the user has specified preferences for how to create new notes, update the instructions by calling UpdateMemory tool with type `instructions`
+2c. Decide if the user wants to read a note or search through notes
 - If the user asks you to read a note, read it by calling ReadNote tool with the note name (from the user) and the depth of how many linked notes to read (usually from 0-3, default 0)
+- If the user asks you to search notes, search it by calling SemanticSearch tool with the keywords and the number of notes to return (default 5)
 - You currently do not have ability to update existing notes. If user asks for it inform him that you are not able to do it.
 
 3. Tell the user that you have updated your memory, if appropriate:
@@ -153,7 +173,9 @@ Your current instructions are:
 
 
 # Node definitions
-def obsidian_assistant(state: GraphState, config: RunnableConfig, store: BaseStore):
+def obsidian_assistant_node(
+    state: GraphState, config: RunnableConfig, store: BaseStore
+):
     """Load memories from the store and use them to personalize the chatbot's response."""
 
     # Get the user ID from the config
@@ -185,13 +207,13 @@ def obsidian_assistant(state: GraphState, config: RunnableConfig, store: BaseSto
 
     # Respond using memory as well as the chat history
     response = model.bind_tools(
-        [UpdateMemory, ReadNote], parallel_tool_calls=False
+        [UpdateMemory, ReadNote, SemanticSearch], parallel_tool_calls=False
     ).invoke([SystemMessage(content=system_msg)] + state["messages"])
 
     return {"messages": [response]}
 
 
-def update_profile(state: GraphState, config: RunnableConfig, store: BaseStore):
+def update_profile_node(state: GraphState, config: RunnableConfig, store: BaseStore):
     """Reflect on the chat history and update the memory collection."""
 
     configurable = configuration.Configuration.from_runnable_config(config)
@@ -249,7 +271,41 @@ def update_profile(state: GraphState, config: RunnableConfig, store: BaseStore):
     }
 
 
-def create_note(
+def search_notes(
+    keywords: str, vector_store: VectorStore, k: int = 5
+) -> List[Document]:
+    """Search notes in the vector store based on keywords"""
+    return vector_store.similarity_search(keywords, k)
+
+
+def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStore):
+
+    tool_call = state["messages"][-1].tool_calls[0]
+    keywords = tool_call["args"]["keywords"]
+    k = tool_call["args"]["k"]
+
+    results = search_notes(keywords, vector_store, k)
+    print("Searching for: ", keywords, k)
+    content = [
+        Note(name=doc.metadata["path"].name, text=doc.page_content) for doc in results
+    ]
+
+    str_content = "\n---------------".join(
+        [f"NOTENAME: {note.name}\n {note.text}" for note in content]
+    )
+
+    return {
+        "messages": [
+            {
+                "role": "tool",
+                "content": str_content,
+                "tool_call_id": tool_call["id"],
+            }
+        ]
+    }
+
+
+def create_note_node(
     state: GraphState,
     config: RunnableConfig,
     store: BaseStore,
@@ -303,7 +359,7 @@ def create_note(
     }
 
 
-def read_notes(
+def read_notes_node(
     state: GraphState,
     config: RunnableConfig,
     store: BaseStore,
@@ -313,9 +369,10 @@ def read_notes(
 
     # Get the tool call parameters
     tool_call = state["messages"][-1].tool_calls[0]
-    note_name = tool_call["args"]["note_name"]
-    depth = tool_call["args"]["depth"]
     print(tool_call["args"])
+    note_name = tool_call["args"]["note_name"]
+    depth = tool_call["args"].get("depth", 0)
+
     # depth = tool_call["args"]["depth"]
 
     # Use the library's existing function
@@ -331,7 +388,9 @@ def read_notes(
     }
 
 
-def update_instructions(state: GraphState, config: RunnableConfig, store: BaseStore):
+def update_instructions_node(
+    state: GraphState, config: RunnableConfig, store: BaseStore
+):
     """Reflect on the chat history and update the memory collection."""
 
     # Get the user ID from the config
@@ -375,7 +434,14 @@ def update_instructions(state: GraphState, config: RunnableConfig, store: BaseSt
 # Conditional edge
 def route_message(
     state: GraphState, config: RunnableConfig, store: BaseStore
-) -> Literal[END, "create_note", "update_instructions", "update_profile", "read_notes"]:
+) -> Literal[
+    END,
+    "create_note",
+    "update_instructions",
+    "update_profile",
+    "read_notes",
+    "search_notes",
+]:
     """Reflect on the memories and chat history to decide whether to update the memory collection."""
     message = state["messages"][-1]
     if len(message.tool_calls) == 0:
@@ -393,6 +459,8 @@ def route_message(
                 raise ValueError
         elif tool_call["args"].get("note_name", None) is not None:
             return "read_notes"
+        elif tool_call["args"].get("keywords", None) is not None:
+            return "search_notes"
         else:
             raise ValueError
 
@@ -401,11 +469,12 @@ def route_message(
 builder = StateGraph(GraphState, config_schema=configuration.Configuration)
 
 # Nodes
-builder.add_node(obsidian_assistant)
-builder.add_node(create_note)
-builder.add_node(read_notes)
-builder.add_node(update_profile)
-builder.add_node(update_instructions)
+builder.add_node("obsidian_assistant", obsidian_assistant_node)
+builder.add_node("create_note", create_note_node)
+builder.add_node("read_notes", read_notes_node)
+builder.add_node("update_profile", update_profile_node)
+builder.add_node("update_instructions", update_instructions_node)
+builder.add_node("search_notes", search_notes_node)
 
 # Edges
 builder.add_edge(START, "obsidian_assistant")
@@ -414,6 +483,7 @@ builder.add_edge("create_note", "obsidian_assistant")
 builder.add_edge("read_notes", "obsidian_assistant")
 builder.add_edge("update_profile", "obsidian_assistant")
 builder.add_edge("update_instructions", "obsidian_assistant")
+builder.add_edge("search_notes", "obsidian_assistant")
 
 # Store for long-term (across-thread) memory
 across_thread_memory = store_factory("memory")  # InMemoryStore()
