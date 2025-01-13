@@ -26,7 +26,10 @@ dependencies = [
 dev = [
     "fastapi[standard]>=0.115.6",
     "ipykernel>=6.29.5",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
     "rich>=13.9.4",
+    "ruff>=0.9.1",
     "streamlit>=1.41.1",
     "uvicorn>=0.34.0",
 ]
