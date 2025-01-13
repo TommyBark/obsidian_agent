@@ -6,7 +6,10 @@ from typing import List, Optional
 class ObsidianLibrary:
     def __init__(self, path: str):
         self.path = path
-        self.file_paths = [str(path) for path in pathlib.Path(path).rglob("*.md")]
+
+        file_paths = [*pathlib.Path(path).rglob("*.md")]
+        self.file_paths = [str(path) for path in file_paths]
+        self.file_names = [path.name for path in file_paths]
 
     def get_note_content(self, note_name: str, link_exists: bool = False) -> str:
 
@@ -63,7 +66,8 @@ class ObsidianLibrary:
                 "Depth cannot be greater than 3, use get_all_note_links instead"
             )
 
-        for _ in range(depth):
+        all_links = links.copy()
+        for _ in range(depth - 1):
             all_links = links.copy()
             for link in links:
                 all_links.extend(
@@ -72,7 +76,6 @@ class ObsidianLibrary:
             links = all_links.copy()
 
         all_links = list(set(all_links))
-        print(all_links)
         for link in all_links:
             note_content = self.get_note_content(link, link_exists=True)
             text = text + f"\n\n{note_content}"
@@ -123,10 +126,12 @@ class ObsidianLibrary:
 
     def put_note(self, note_title: str, content: str):
         path = f"{self.path}/{note_title}.md"
-        if os.path.exists(path):
+        if f"{note_title}.md" in self.file_names:
             raise FileExistsError(f"Note '{note_title}' already exists")
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
+            self.file_paths.append(path)
+            self.file_names.append(f"{note_title}.md")
 
 
 def find_and_extract_section(text: str, search_string: str) -> Optional[str]:
