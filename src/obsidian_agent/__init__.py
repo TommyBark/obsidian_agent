@@ -6,7 +6,7 @@ import tomli
 
 
 def get_version():
-    pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+    pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
     with open(pyproject_path, "rb") as f:
         return tomli.load(f)["project"]["version"]
 
