@@ -1,10 +1,12 @@
 import os
+import pathlib
 from typing import List, Optional
 
 
 class ObsidianLibrary:
     def __init__(self, path: str):
         self.path = path
+        self.file_paths = [str(path) for path in pathlib.Path(path).rglob("*.md")]
 
     def get_note_content(self, note_name: str, link_exists: bool = False) -> str:
 
@@ -15,11 +17,16 @@ class ObsidianLibrary:
         if "|" in note_name:
             note_name = note_name.split("|")[0]
 
-        note_path = f"{self.path}/{note_name}.md".strip().replace("\xa0", " ")
-        if (link_exists is False) and (os.path.exists(note_path) is False):
+        ends_with_str = str(pathlib.Path("/", f"{note_name}.md"))
+        note_paths = [path for path in self.file_paths if path.endswith(ends_with_str)]
+        if (len(note_paths) == 0) and (link_exists is False):
             raise FileNotFoundError(f"Note '{note_name}' not found")
-        elif (link_exists is True) and (os.path.exists(note_path) is False):
+        elif (len(note_paths) == 0) and (link_exists is True):
             return f"Note '{note_name}' is empty."
+        elif len(note_paths) > 1:
+            raise ValueError(f"Multiple notes found with name '{note_name}'")
+
+        note_path = note_paths[0].replace("\xa0", " ")
 
         with open(note_path, "r", encoding="utf-8") as f:
             text = f.read()
