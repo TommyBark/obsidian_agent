@@ -4,10 +4,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Literal, Optional, TypedDict
 
-from langchain_core.messages import HumanMessage, SystemMessage, merge_message_runs
+from langchain_core.messages import (
+    AnyMessage,
+    HumanMessage,
+    SystemMessage,
+    merge_message_runs,
+)
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.graph import END, START, StateGraph, add_messages
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
 from trustcall import create_extractor
@@ -23,6 +28,10 @@ if OBSIDIAN_VAULT_PATH is None:
     raise ValueError("Please set the OBSIDIAN_VAULT_PATH environment variable.")
 
 LIBRARY = ObsidianLibrary(path=OBSIDIAN_VAULT_PATH)
+
+
+class GraphState(TypedDict):
+    messages: Annotated[list[AnyMessage], add_messages]
 
 
 @dataclass
@@ -67,6 +76,7 @@ class Profile(BaseModel):
 # ToDo schema
 class Note(BaseModel):
     name: str = Field(description="The task to be completed.")
+    path: str = Field(description="The path to the note.")
     text: str = Field(description="Estimated time to complete the task (minutes).")
 
 
@@ -143,7 +153,7 @@ Your current instructions are:
 
 
 # Node definitions
-def obsidian_assistant(state: MessagesState, config: RunnableConfig, store: BaseStore):
+def obsidian_assistant(state: GraphState, config: RunnableConfig, store: BaseStore):
     """Load memories from the store and use them to personalize the chatbot's response."""
 
     # Get the user ID from the config
@@ -181,7 +191,7 @@ def obsidian_assistant(state: MessagesState, config: RunnableConfig, store: Base
     return {"messages": [response]}
 
 
-def update_profile(state: MessagesState, config: RunnableConfig, store: BaseStore):
+def update_profile(state: GraphState, config: RunnableConfig, store: BaseStore):
     """Reflect on the chat history and update the memory collection."""
 
     configurable = configuration.Configuration.from_runnable_config(config)
@@ -240,7 +250,7 @@ def update_profile(state: MessagesState, config: RunnableConfig, store: BaseStor
 
 
 def create_note(
-    state: MessagesState,
+    state: GraphState,
     config: RunnableConfig,
     store: BaseStore,
 ):
@@ -294,7 +304,7 @@ def create_note(
 
 
 def read_notes(
-    state: MessagesState,
+    state: GraphState,
     config: RunnableConfig,
     store: BaseStore,
 ):
@@ -321,7 +331,7 @@ def read_notes(
     }
 
 
-def update_instructions(state: MessagesState, config: RunnableConfig, store: BaseStore):
+def update_instructions(state: GraphState, config: RunnableConfig, store: BaseStore):
     """Reflect on the chat history and update the memory collection."""
 
     # Get the user ID from the config
@@ -364,7 +374,7 @@ def update_instructions(state: MessagesState, config: RunnableConfig, store: Bas
 
 # Conditional edge
 def route_message(
-    state: MessagesState, config: RunnableConfig, store: BaseStore
+    state: GraphState, config: RunnableConfig, store: BaseStore
 ) -> Literal[END, "create_note", "update_instructions", "update_profile", "read_notes"]:
     """Reflect on the memories and chat history to decide whether to update the memory collection."""
     message = state["messages"][-1]
@@ -388,14 +398,16 @@ def route_message(
 
 
 # Create the graph + all nodes
-builder = StateGraph(MessagesState, config_schema=configuration.Configuration)
+builder = StateGraph(GraphState, config_schema=configuration.Configuration)
 
-# Define the flow of the memory extraction process
+# Nodes
 builder.add_node(obsidian_assistant)
 builder.add_node(create_note)
 builder.add_node(read_notes)
 builder.add_node(update_profile)
 builder.add_node(update_instructions)
+
+# Edges
 builder.add_edge(START, "obsidian_assistant")
 builder.add_conditional_edges("obsidian_assistant", route_message)
 builder.add_edge("create_note", "obsidian_assistant")
