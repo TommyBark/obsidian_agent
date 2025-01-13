@@ -145,11 +145,9 @@ class ObsidianLibrary:
             self.file_paths.append(path)
             self.file_names.append(f"{note_title}.md")
 
-    def search_notes(
-        self, keywords: str, vector_store: VectorStore, k: int = 5
-    ) -> List[Document]:
+    def search_notes(self, keywords: str, k: int = 5) -> List[Document]:
         """Search notes in the vector store based on keywords"""
-        return vector_store.similarity_search(keywords, k)
+        return self.vector_store.similarity_search(keywords, k)
 
 
 def find_and_extract_section(text: str, search_string: str) -> Optional[str]:
