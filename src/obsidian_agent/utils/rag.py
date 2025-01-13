@@ -7,7 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from obsidian_utils import ObsidianLibrary
+from src.obsidian_agent.utils.obsidian import ObsidianLibrary
 
 
 def create_vector_store(obsidian_path: str, store_path: Optional[str] = None) -> FAISS:

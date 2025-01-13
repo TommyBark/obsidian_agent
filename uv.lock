@@ -1719,6 +1719,7 @@ dev = [
     { name = "rich" },
     { name = "ruff" },
     { name = "streamlit" },
+    { name = "tomli" },
     { name = "uvicorn" },
 ]
 
@@ -1750,6 +1751,7 @@ dev = [
     { name = "rich", specifier = ">=13.9.4" },
     { name = "ruff", specifier = ">=0.9.1" },
     { name = "streamlit", specifier = ">=1.41.1" },
+    { name = "tomli", specifier = ">=2.2.1" },
     { name = "uvicorn", specifier = ">=0.34.0" },
 ]
 

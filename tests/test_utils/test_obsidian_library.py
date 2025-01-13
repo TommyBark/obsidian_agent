@@ -6,7 +6,7 @@ import pytest
 
 # Add the parent directory of the current file to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from obsidian_utils import (  # Replace 'your_module' with the actual module name
+from src.obsidian_agent.utils.obsidian import (  # Replace 'your_module' with the actual module name
     ObsidianLibrary,
     find_and_extract_section,
 )

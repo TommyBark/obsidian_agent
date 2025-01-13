@@ -1,7 +1,7 @@
 [project]
 name = "obsidian-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "An LLM agent assistant for Obsidian library."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -31,5 +31,6 @@ dev = [
     "rich>=13.9.4",
     "ruff>=0.9.1",
     "streamlit>=1.41.1",
+    "tomli>=2.2.1",
     "uvicorn>=0.34.0",
 ]

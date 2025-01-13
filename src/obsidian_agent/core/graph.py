@@ -17,10 +17,10 @@ from langgraph.store.base import BaseStore
 from pydantic import BaseModel, Field
 from trustcall import create_extractor
 
-import configuration
-from obsidian_utils import ObsidianLibrary
-from store import checkpoint_factory, store_factory
-from utils import Spy, extract_tool_info
+import obsidian_agent.core.configuration as configuration
+from obsidian_agent.core.store import checkpoint_factory, store_factory
+from obsidian_agent.utils.common import Spy, extract_tool_info
+from obsidian_agent.utils.obsidian import ObsidianLibrary
 
 OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
 VECTOR_STORE_PATH = os.getenv("VECTOR_STORE_PATH")
