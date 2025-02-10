@@ -81,8 +81,7 @@ def obsidian_assistant_node(
         instructions=instructions,
     )
 
-    response = model.bind_tools(
-        [UpdateMemory, ReadNote, SemanticSearch], parallel_tool_calls=False
-    ).invoke([SystemMessage(content=system_msg)] + state["messages"])
+    tools = [UpdateMemory, ReadNote, SemanticSearch]
+    response = model.bind_tools(tools=tools).invoke([SystemMessage(content=system_msg)] + state["messages"])
 
     return {"messages": [response]}
