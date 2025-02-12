@@ -15,7 +15,8 @@ class Configuration:
 
     You are designed to be a companion to a user, helping them by answering their messages utilizing their personal note library.
     """
-
+    recursion_limit: int = 10
+    
     @classmethod
     def from_runnable_config(
         cls, config: Optional[RunnableConfig] = None

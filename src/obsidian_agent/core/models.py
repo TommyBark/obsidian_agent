@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from typing import Annotated, Literal, Optional, TypedDict
+from typing import Annotated, Literal, Optional
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 
 class GraphState(TypedDict):
@@ -16,24 +17,26 @@ class ValueRange:
     hi: int
 
 
-class UpdateMemory(TypedDict):
-    """Decision on what memory type to update"""
+class SearchNotes(BaseModel):
+    """Search notes in the vector store based on keywords."""
+    keywords: str = Field(description="The keywords to search for")
+    k: int = Field(default=5, description="The number of results to return")
 
-    update_type: Literal["user", "instructions", "new_note"]
+class CreateNote(BaseModel):
+    """Creates a note in the library."""
+    note_name: str = Field(description="The name of the note to be created")
+    note_text: str = Field(description="The content of the note to be created")
 
+class ReadNote(BaseModel):
+    """Read a note and its linked notes."""
+    note_name: str = Field(description="The name of the note to read")
+    depth: int = Field(default=0, description="The depth of linked notes to read")
 
-class ReadNote(TypedDict):
-    """Decision on reading a note and recursively also its linked notes with specified depth"""
-
-    note_name: str
-    depth: Annotated[int, ValueRange(0, 2)]
-
-
-class SemanticSearch(BaseModel):
-    """Decision on searching notes based on keywords"""
-
-    keywords: str = Field(description="Keywords to search notes for.")
-    k: int = Field(description="Number of notes to return.", default=5)
+class UpdateMemory(BaseModel):
+    """Update either user profile or instructions."""
+    update_type: Literal["user", "instructions"] = Field(
+        description="Type of update - user for profile, instructions for custom instructions"
+    )
 
 
 class Profile(BaseModel):

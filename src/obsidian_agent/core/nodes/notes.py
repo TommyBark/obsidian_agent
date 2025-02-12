@@ -1,21 +1,21 @@
 # obsidian_agent/core/nodes/notes.py
 from datetime import datetime
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, merge_message_runs
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 from trustcall import create_extractor
 
 from obsidian_agent.core.environment import LIBRARY, model
-from obsidian_agent.core.models import GraphState, Note, SemanticSearch
+from obsidian_agent.core.models import GraphState, Note, SearchNotes
 from obsidian_agent.utils.common import Spy, extract_tool_info
 
 
 def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStore):
     tool_call = state["messages"][-1].tool_calls[0]
     keywords = tool_call["args"]["keywords"]
-    k = tool_call["args"].get("k", SemanticSearch.model_fields["k"].default)
-
+    k = tool_call["args"].get("k", SearchNotes.model_fields["k"].default)
+    k = int(k)
     results = LIBRARY.search_notes(keywords, k)
     content = [
         Note(name=doc.metadata["path"].name, text=doc.page_content) for doc in results
