@@ -85,8 +85,17 @@ def obsidian_assistant_node(
     )
 
     tools = [UpdateMemory, CreateNote, ReadNote, SearchNotes]
-    response = model.bind_tools(
-        tools=tools, tool_choice="auto", parallel_tool_calls=False
-    ).invoke([SystemMessage(content=system_msg)] + state["messages"], config=config)
+
+    bind_tools_kwargs = {
+        "tools": tools,
+        "tool_choice": "auto",
+    }
+
+    if "OpenAI" in str(type(model)):
+        bind_tools_kwargs["parallel_tool_calls"] = False
+
+    response = model.bind_tools(**bind_tools_kwargs).invoke(
+        [SystemMessage(content=system_msg)] + state["messages"], config=config
+    )
 
     return {"messages": [response]}
