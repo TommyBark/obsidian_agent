@@ -15,4 +15,4 @@ Talk with your Obsidian Vault.
 1. Install dependacies from `pyproject.toml`
 2. Create `.env` file - see `.env.example`
 2. Run agent by launching Langgraph API with `langgraph dev` command.
-3. (optional) Run Gradio Chat UI with `python app.py` command.
+3. (optional) Run Gradio Chat UI with `python src/obsidian_agent/apps/gradio_app.py` command.

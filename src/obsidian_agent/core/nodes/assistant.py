@@ -5,9 +5,10 @@ from langgraph.store.base import BaseStore
 import obsidian_agent.core.configuration as configuration
 from obsidian_agent.core.environment import model
 from obsidian_agent.core.models import (
+    CreateNote,
     GraphState,
     ReadNote,
-    SemanticSearch,
+    SearchNotes,
     UpdateMemory,
 )
 
@@ -42,11 +43,11 @@ Here are your instructions for reasoning about the user's messages:
 2a. Decide whether any of the your long-term memory should be updated:
 - If personal information was provided about the user, update the user's profile by calling UpdateMemory tool with type `user`
 2b. Decide if the new note should be created as demanded by the user
-- If user asks you to create new note, create it by using UpdateMemory tool with type `new_note`
+- If user asks you to create new note, create it by using CreateNote tool with type `new_note`
 - If the user has specified preferences for how to create new notes, update the instructions by calling UpdateMemory tool with type `instructions`
 2c. Decide if the user wants to read a note or search through notes
 - If the user asks you to read a note, read it by calling ReadNote tool with the note name (from the user) and the depth of how many linked notes to read (usually from 0-3, default 0)
-- If the user asks you to search notes, search it by calling SemanticSearch tool with the keywords and the number of notes to return (default 5)
+- If the user asks you to search notes, search it by calling SearchNotes tool with the keywords and the number of notes to return (default 5)
 - You currently do not have ability to update existing notes. If user asks for it inform him that you are not able to do it.
 
 3. Tell the user that you have updated your memory, if appropriate:
@@ -81,8 +82,7 @@ def obsidian_assistant_node(
         instructions=instructions,
     )
 
-    response = model.bind_tools(
-        [UpdateMemory, ReadNote, SemanticSearch], parallel_tool_calls=False
-    ).invoke([SystemMessage(content=system_msg)] + state["messages"])
+    tools = [UpdateMemory, CreateNote, ReadNote, SearchNotes]
+    response = model.bind_tools(tools=tools).invoke([SystemMessage(content=system_msg)] + state["messages"], config=config)
 
     return {"messages": [response]}

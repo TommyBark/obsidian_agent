@@ -3,6 +3,7 @@ data/
 .langgraph_api/
 .vscode/
 test_store/
+*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
