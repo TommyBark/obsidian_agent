@@ -19,24 +19,37 @@ class ValueRange:
 
 class SearchNotes(BaseModel):
     """Search notes in the vector store based on keywords."""
+
     keywords: str = Field(description="The keywords to search for")
     k: int = Field(default=5, description="The number of results to return")
 
+
 class CreateNote(BaseModel):
     """Creates a note in the library."""
+
     note_name: str = Field(description="The name of the note to be created")
     note_text: str = Field(description="The content of the note to be created")
 
+
 class ReadNote(BaseModel):
     """Read a note and its linked notes."""
+
     note_name: str = Field(description="The name of the note to read")
     depth: int = Field(default=0, description="The depth of linked notes to read")
 
+
 class UpdateMemory(BaseModel):
     """Update either user profile or instructions."""
+
     update_type: Literal["user", "instructions"] = Field(
         description="Type of update - user for profile, instructions for custom instructions"
     )
+
+
+class GetURLContent(BaseModel):
+    """Get the content of a URL."""
+
+    url: str = Field(description="The URL to get content from")
 
 
 class Profile(BaseModel):

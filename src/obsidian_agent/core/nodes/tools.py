@@ -12,6 +12,7 @@ from obsidian_agent.core.nodes.profile import (
     update_profile_node,
 )
 
+from obsidian_agent.core.nodes.others import get_url_content_node
 
 def tools_node(state: GraphState, config: RunnableConfig, store: BaseStore):
     tool_call = state["messages"][-1].tool_calls[0]
@@ -29,7 +30,8 @@ def tools_node(state: GraphState, config: RunnableConfig, store: BaseStore):
         "ReadNote": lambda: read_notes_node(state, config, store),
         "CreateNote": lambda: create_note_node(state, config, store),
         "UpdateProfile": lambda: update_profile_node(state, config, store),
-        "UpdateInstructions": lambda: update_instructions_node(state, config, store)
+        "UpdateInstructions": lambda: update_instructions_node(state, config, store),
+        "GetURLContent": lambda: get_url_content_node(state, config, store),
     }
 
     if tool_name not in tool_map:
