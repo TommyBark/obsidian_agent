@@ -1,4 +1,5 @@
 # obsidian_agent/core/nodes/profile.py
+import ast
 import uuid
 from datetime import datetime
 
@@ -115,14 +116,19 @@ def update_instructions_node(
         + state["messages"][:-1]
         + [
             HumanMessage(
-                content="Please update the instructions based on the conversation"
+                content="Please update the instructions based on the conversation. Return just new instructions."
             )
         ]
     )
 
     # Overwrite the existing memory in the store
     key = "user_instructions"
-    store.put(namespace, key, {"memory": new_memory.content})
+
+    # Convert the memory content to a dictionary or keep as a string
+    new_memory_content = ast.literal_eval(new_memory.content)
+    if isinstance(new_memory_content, dict):
+        new_memory_content = new_memory_content["memory"]
+    store.put(namespace, key, {"memory": new_memory_content})
 
     tool_calls = state["messages"][-1].tool_calls
     return {
