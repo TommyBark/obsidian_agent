@@ -67,7 +67,7 @@ class ObsidianLibrary:
 
     def get_note_with_context(self, note_name: str, depth: int = 2) -> str:
 
-        note_name = note_name.rstrip(".md")
+        note_name = note_name.removesuffix(".md")
         text = self.get_note_content(note_name, link_exists=False)
         if depth == 0:
             return text
