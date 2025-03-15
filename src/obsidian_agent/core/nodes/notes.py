@@ -11,7 +11,7 @@ from obsidian_agent.core.models import GraphState, Note, SearchNotes
 
 
 def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStore):
-    tool_call = state["messages"][-1].tool_calls[0]
+    tool_call = state["messages"][-1].tool_calls[0] # type: ignore
     keywords = tool_call["args"]["keywords"]
     k = tool_call["args"].get("k", SearchNotes.model_fields["k"].default)
     k = int(k)
@@ -37,7 +37,7 @@ def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStor
 
 def create_note_node(state: GraphState, config: RunnableConfig, store: BaseStore):
     # Get the tool call from the last message
-    tool_call = state["messages"][-1].tool_calls[0]
+    tool_call = state["messages"][-1].tool_calls[0] # type: ignore
 
     note_name = tool_call["args"]["note_name"]
     note_text = tool_call["args"]["note_text"]
@@ -60,7 +60,7 @@ def create_note_node(state: GraphState, config: RunnableConfig, store: BaseStore
 
 
 def read_notes_node(state: GraphState, config: RunnableConfig, store: BaseStore):
-    tool_call = state["messages"][-1].tool_calls[0]
+    tool_call = state["messages"][-1].tool_calls[0] # type: ignore
     note_name = tool_call["args"]["note_name"]
     depth = tool_call["args"].get("depth", 0)
 

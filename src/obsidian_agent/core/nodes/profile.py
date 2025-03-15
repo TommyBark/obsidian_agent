@@ -85,7 +85,7 @@ def update_profile_node(state: GraphState, config: RunnableConfig, store: BaseSt
             rmeta.get("json_doc_id", str(uuid.uuid4())),
             r.model_dump(mode="json"),
         )
-    tool_calls = state["messages"][-1].tool_calls
+    tool_calls = state["messages"][-1].tool_calls  # type: ignore
     return {
         "messages": [
             {
@@ -126,13 +126,14 @@ def update_instructions_node(
 
     # Convert the memory content to a dictionary or keep as a string
     new_memory_raw = new_memory.content
-    new_memory_raw = new_memory_raw.lstrip("```json").rstrip("```")
+    assert isinstance(new_memory_raw, str)
+    new_memory_raw = new_memory_raw.removeprefix("```json").removesuffix("```")
     new_memory_content = ast.literal_eval(new_memory_raw)
     if isinstance(new_memory_content, dict):
         new_memory_content = new_memory_content["memory"]
     store.put(namespace, key, {"memory": new_memory_content})
 
-    tool_calls = state["messages"][-1].tool_calls
+    tool_calls = state["messages"][-1].tool_calls  # type: ignore
     return {
         "messages": [
             {

@@ -15,7 +15,7 @@ from obsidian_agent.core.nodes.profile import (
 from obsidian_agent.core.nodes.others import get_url_content_node
 
 def tools_node(state: GraphState, config: RunnableConfig, store: BaseStore):
-    tool_call = state["messages"][-1].tool_calls[0]
+    tool_call = state["messages"][-1].tool_calls[0] # type: ignore
     tool_name = tool_call["name"]
 
     # If UpdateMemory tool is called, we need to determine which tool to call

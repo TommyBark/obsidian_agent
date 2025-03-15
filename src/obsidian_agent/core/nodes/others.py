@@ -6,7 +6,7 @@ from obsidian_agent.core.tools import scrape_page_jina
 
 
 def get_url_content_node(state: GraphState, config: RunnableConfig, store: BaseStore):
-    tool_call = state["messages"][-1].tool_calls[0]
+    tool_call = state["messages"][-1].tool_calls[0] # type: ignore
     url = tool_call["args"]["url"]
     content = scrape_page_jina(url)
 

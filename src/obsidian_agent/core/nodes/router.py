@@ -11,7 +11,7 @@ def route_message(
     state: GraphState, config: RunnableConfig, store: BaseStore
 ) -> Literal[END, "tools"]:
     message = state["messages"][-1]
-    if len(message.tool_calls) == 0:
+    if len(message.tool_calls) == 0: # type: ignore
         return END
 
     return "tools"
