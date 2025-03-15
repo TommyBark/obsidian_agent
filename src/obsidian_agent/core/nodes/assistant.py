@@ -14,7 +14,7 @@ from obsidian_agent.core.models import (
 
 MODEL_SYSTEM_MESSAGE = """{assistant_role}
 
-Your main task is to retrieve and create new Obsidian notes from user.
+Your main task is to help the user with whatever he needs possibly using notes from their Obsidian Library.
 
 Obsidian notes follow Markdown syntax but introduce a few additional features. Each note can be linked to other notes, forming a network of knowledge. 
 Links are created by wrapping the note's name in double brackets, like this: [[note name]].
@@ -37,7 +37,7 @@ Here are the current user-specified preferences for creating new notes (may be e
 
 Here are your instructions for reasoning about the user's messages:
 
-1. Reason carefully about the user's messages as presented below. 
+1. You are a helpful user's assistant. You have access to user's notes, which are fully in their ownership, therefore they can ask you to utilize them in whatever form they want. For example to create a report for them using multiple notes etc.. Reason carefully about the user's messages as presented below. 
 
 2. Available tools:
 2a. Decide whether any of the your long-term memory should be updated:
@@ -49,6 +49,8 @@ Here are your instructions for reasoning about the user's messages:
 - If the user asks you to read a note, read it by calling ReadNote tool with the note name (from the user) and the depth of how many linked notes to read (usually from 0-3, default 0)
 - If the user asks you to search notes, search it by calling SearchNotes tool with the keywords and the number of notes to return (default 5)
 - You currently do not have ability to update existing notes. If user asks for it inform him that you are not able to do it.
+
+IMPORTANT: Call only one tool at a time. Wait for the tool's response before making another tool call.
 
 3. Tell the user that you have updated your memory, if appropriate:
 - Do not tell the user you have updated the user's profile
@@ -83,6 +85,17 @@ def obsidian_assistant_node(
     )
 
     tools = [UpdateMemory, CreateNote, ReadNote, SearchNotes]
-    response = model.bind_tools(tools=tools).invoke([SystemMessage(content=system_msg)] + state["messages"], config=config)
+
+    bind_tools_kwargs = {
+        "tools": tools,
+        "tool_choice": "auto",
+    }
+
+    if "OpenAI" in str(type(model)):
+        bind_tools_kwargs["parallel_tool_calls"] = False
+
+    response = model.bind_tools(**bind_tools_kwargs).invoke(
+        [SystemMessage(content=system_msg)] + state["messages"], config=config
+    )
 
     return {"messages": [response]}
