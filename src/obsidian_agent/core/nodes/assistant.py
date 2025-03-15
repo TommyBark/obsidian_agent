@@ -85,6 +85,8 @@ def obsidian_assistant_node(
     )
 
     tools = [UpdateMemory, CreateNote, ReadNote, SearchNotes]
-    response = model.bind_tools(tools=tools).invoke([SystemMessage(content=system_msg)] + state["messages"], config=config)
+    response = model.bind_tools(
+        tools=tools, tool_choice="auto", parallel_tool_calls=False
+    ).invoke([SystemMessage(content=system_msg)] + state["messages"], config=config)
 
     return {"messages": [response]}
