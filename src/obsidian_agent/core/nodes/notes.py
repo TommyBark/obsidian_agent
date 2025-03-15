@@ -8,6 +8,7 @@ from trustcall import create_extractor
 
 from obsidian_agent.core.environment import LIBRARY, model
 from obsidian_agent.core.models import GraphState, Note, SearchNotes
+from obsidian_agent.core.nodes.profile import TRUSTCALL_INSTRUCTION
 from obsidian_agent.utils.common import Spy, extract_tool_info
 
 
@@ -37,38 +38,24 @@ def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStor
 
 
 def create_note_node(state: GraphState, config: RunnableConfig, store: BaseStore):
-    TRUSTCALL_INSTRUCTION_FORMATTED = TRUSTCALL_INSTRUCTION.format(
-        time=datetime.now().isoformat()
-    )
-    updated_messages = list(
-        merge_message_runs(
-            messages=[SystemMessage(content=TRUSTCALL_INSTRUCTION_FORMATTED)]
-            + state["messages"][:-1]
-        )
-    )
+    # Get the tool call from the last message
+    tool_call = state["messages"][-1].tool_calls[0]
 
-    spy = Spy()
-    todo_extractor = create_extractor(
-        model, tools=[Note], tool_choice="Note", enable_inserts=True
-    ).with_listeners(on_end=spy)
-
-    result = todo_extractor.invoke({"messages": updated_messages})
-    new_note = result["responses"][0]
-    note = new_note.model_dump(mode="json")
+    note_name = tool_call["args"]["note_name"]
+    note_text = tool_call["args"]["note_text"]
 
     try:
-        LIBRARY.put_note(note["name"], note["text"])
-        content = f"Note: {note['name']} has been created."
+        LIBRARY.put_note(note_name, note_text)
+        content = f"Note: {note_name} has been created."
     except FileExistsError as e:
         content = str(e)
 
-    tool_calls = state["messages"][-1].tool_calls
     return {
         "messages": [
             {
                 "role": "tool",
                 "content": content,
-                "tool_call_id": tool_calls[0]["id"],
+                "tool_call_id": tool_call["id"],
             }
         ]
     }
