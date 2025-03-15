@@ -125,7 +125,9 @@ def update_instructions_node(
     key = "user_instructions"
 
     # Convert the memory content to a dictionary or keep as a string
-    new_memory_content = ast.literal_eval(new_memory.content)
+    new_memory_raw = new_memory.content
+    new_memory_raw = new_memory_raw.lstrip("```json").rstrip("```")
+    new_memory_content = ast.literal_eval(new_memory_raw)
     if isinstance(new_memory_content, dict):
         new_memory_content = new_memory_content["memory"]
     store.put(namespace, key, {"memory": new_memory_content})

@@ -8,8 +8,6 @@ from trustcall import create_extractor
 
 from obsidian_agent.core.environment import LIBRARY, model
 from obsidian_agent.core.models import GraphState, Note, SearchNotes
-from obsidian_agent.core.nodes.profile import TRUSTCALL_INSTRUCTION
-from obsidian_agent.utils.common import Spy, extract_tool_info
 
 
 def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStore):
@@ -22,7 +20,7 @@ def search_notes_node(state: GraphState, config: RunnableConfig, store: BaseStor
         Note(name=doc.metadata["path"].name, text=doc.page_content) for doc in results
     ]
 
-    str_content = "\n---------------".join(
+    str_content = "\n---------------\n".join(
         [f"NOTENAME: {note.name}\n {note.text}" for note in content]
     )
 
