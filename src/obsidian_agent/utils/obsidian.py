@@ -8,7 +8,7 @@ from langchain_openai import OpenAIEmbeddings
 
 
 class ObsidianLibrary:
-    def __init__(self, path: str, vector_store_path: str):
+    def __init__(self, path: str, vector_store_path: Optional[str] = None):
         self.path = path
 
         file_paths = [*pathlib.Path(path).rglob("*.md")]
@@ -16,12 +16,14 @@ class ObsidianLibrary:
         self.file_names = [path.name for path in file_paths]
 
         embedding_model = OpenAIEmbeddings()
-
-        self.vector_store = FAISS.load_local(
-            vector_store_path,
-            embeddings=embedding_model,
-            allow_dangerous_deserialization=True,
-        )
+        if vector_store_path is None:
+            self.vector_store = None
+        else:
+            self.vector_store = FAISS.load_local(
+                vector_store_path,
+                embeddings=embedding_model,
+                allow_dangerous_deserialization=True,
+            )
 
     def get_note_content(self, note_name: str, link_exists: bool = False) -> str:
 
