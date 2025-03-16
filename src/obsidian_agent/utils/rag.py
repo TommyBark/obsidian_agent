@@ -23,9 +23,11 @@ def create_vector_store(obsidian_path: str, store_path: Optional[str] = None) ->
     """
     embedding_model = OpenAIEmbeddings()
 
-    if store_path:
+    if store_path is not None:
         if Path(store_path).exists():
-            print("Loading existing store")
+            print(
+                "Loading existing store, to re-create the store delete the existing store."
+            )
             return FAISS.load_local(store_path, embedding_model)
 
     file_paths = [*Path(obsidian_path).rglob("*.md")]
@@ -60,6 +62,4 @@ if __name__ == "__main__":
     obsidian = ObsidianLibrary(OBSIDIAN_VAULT_PATH)
 
     t = create_vector_store(OBSIDIAN_VAULT_PATH, store_path="./test_store")
-    # print(len(filenames))
-    # store = create_vector_store(docs, store_path="test_store")
-    # print(store)
+
