@@ -6,6 +6,8 @@ from langchain_community.vectorstores import FAISS, VectorStore
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
+from obsidian_agent.utils.rag import create_vector_store
+
 
 class ObsidianLibrary:
     def __init__(self, path: str, vector_store_path: Optional[str] = None):
@@ -17,7 +19,7 @@ class ObsidianLibrary:
 
         embedding_model = OpenAIEmbeddings()
         if vector_store_path is None:
-            self.vector_store = None
+            self.vector_store = create_vector_store(self.path)
         else:
             self.vector_store = FAISS.load_local(
                 vector_store_path,
@@ -199,10 +201,3 @@ def find_and_extract_section(text: str, search_string: str) -> Optional[str]:
 
     except ValueError:
         return None
-
-
-if __name__ == "__main__":
-    OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH")
-    obsidian = ObsidianLibrary(OBSIDIAN_VAULT_PATH)
-    print(obsidian.get_note_links("Motivation"))
-    print(obsidian.get_note_with_context("Motivation", depth=1))
