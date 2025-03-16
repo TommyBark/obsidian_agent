@@ -5,8 +5,6 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
-from obsidian_agent.utils.rag import create_vector_store
-
 
 class ObsidianLibrary:
     def __init__(self, path: str, vector_store_path: Optional[str] = None):
@@ -18,6 +16,8 @@ class ObsidianLibrary:
 
         embedding_model = OpenAIEmbeddings()
         if vector_store_path is None:
+            from obsidian_agent.utils.rag import create_vector_store
+
             self.vector_store = create_vector_store(self.path)
         else:
             self.vector_store = FAISS.load_local(
