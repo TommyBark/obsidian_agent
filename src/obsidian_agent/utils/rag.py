@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -62,4 +62,3 @@ if __name__ == "__main__":
     obsidian = ObsidianLibrary(OBSIDIAN_VAULT_PATH)
 
     t = create_vector_store(OBSIDIAN_VAULT_PATH, store_path="./test_store")
-

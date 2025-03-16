@@ -1,8 +1,7 @@
-import os
 import pathlib
 from typing import List, Optional
 
-from langchain_community.vectorstores import FAISS, VectorStore
+from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
